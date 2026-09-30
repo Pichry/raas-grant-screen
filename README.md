@@ -40,13 +40,16 @@ This prototype combines a React front end with a local-state application data mo
 - React Router
 - Recharts
 - Lucide React
-- Local demo state storage with browser localStorage
+- Express API server
+- SQLite database for persistence
+- bcrypt hashing for password storage
 
 ## Architecture
 
 - Frontend: Vite + React application in src/
-- State: local in-memory/localStorage simulation of Firebase-like collections
-- Auth model: demo role-based login and applicant registration
+- Backend: Express API in server/index.js
+- Database: SQLite file in data/raas.db
+- Auth model: real password validation with bcrypt and role-based access
 - AI layer: src/services/aiService.ts abstraction with a local rule-based demo provider
 
 ## AI architecture
@@ -55,40 +58,45 @@ This prototype intentionally does not hardcode a fake “success” result as if
 
 ## Database design
 
-The project uses localStorage to simulate the expected Firestore collections and records in a demo environment, including:
+The application now persists data using SQLite with the following tables:
 
 - users
 - applications
 - screening_results
-- historical_proposals
 - audit_logs
 
-The app is designed to be compatible with a Firebase/Firestore migration without breaking the current front-end prototype.
+These tables support the full user lifecycle, application intake, screening outcomes, and review trail. The schema is intentionally simple and can be migrated to PostgreSQL or Firestore in a production environment.
 
 ## Authentication
 
-Authentication is currently simulated for demo use:
+Authentication is backed by the Express API and SQLite database.
+
+Demo credentials:
 
 - admin@raas.rw / Admin2025!
 - officer@raas.rw / Officer2025!
 - applicant@raas.rw / Applicant2025!
 
-Applicants can also create a local account through the registration screen. This is prototype-only and not a secure production auth flow.
+Applicants can also create a new account through the registration screen. Passwords are hashed with bcrypt before storage.
 
 ## Security
 
 - secrets are not stored in the repo
 - the app does not expose real AI credentials
-- role-based route guards are implemented at the front-end level
-- real backend security rules are not present because this is a front-end prototype without Firebase backend configuration
+- role-based route guards are implemented in the frontend and backed by the server-side user model
+- production-grade RBAC and audit enforcement should be upgraded with a managed auth provider before deployment to production
 
 ## Local setup
 
 1. Install dependencies:
    npm install
-2. Start the app:
-   npm run dev
-3. Open the local Vite URL in the browser.
+2. Start the backend API:
+   npm run server
+3. Start the frontend:
+   npm run dev -- --host 0.0.0.0
+4. Open the Vite URL in the browser, typically http://localhost:8444/
+
+The API runs locally on http://localhost:4000.
 
 ## Environment variables
 
@@ -96,6 +104,7 @@ Create a .env file with values such as:
 
 ```bash
 VITE_AI_PROVIDER=local-demo
+VITE_API_BASE=/api
 ```
 
 In a live deployment, the provider would be replaced with real backend settings such as Firebase config and LLM API keys stored server-side.
@@ -114,28 +123,27 @@ This validates the production build for the current prototype.
 
 ## Deployment
 
-This app is configured for Vite static deployment. A production-ready version should be deployed to Vercel or a similar frontend host, with Firebase or another backend for real auth, database, and AI services.
+This app is configured for a frontend + backend workflow. The frontend can be deployed to Vercel, while the API can be hosted on a Node-compatible service such as Render or Railway. For a production deployment, put the database and environment variables on the backend host and keep the frontend talking through a configured API base URL.
 
 ## Live demo URL
 
-No production deployment is configured in this prototype yet.
+Frontend: https://build-raas-grant-screen-bu215o8qc-clesab.vercel.app
+API: http://localhost:4000 while running locally
 
 ## Known limitations
 
-- No real Firebase backend, Firestore, or Cloud Functions
-- No real AI API integration
-- No real PDF generation service or secure document storage
-- No production-grade auth or RBAC enforcement beyond front-end route guards
-- Data is local to the browser in demo mode
+- AI analysis remains a local demo/provider abstraction rather than a fully live external LLM call
+- No production-managed auth provider or enterprise RBAC layer
+- No file storage or PDF generation service yet
+- Database is SQLite for the prototype and should be upgraded for multi-user production workloads
 
 ## Future improvements
 
-- Replace local storage with Firebase Auth + Firestore
-- Add Cloud Functions for AI analysis and PDF generation
-- Integrate an LLM API securely on the server side
-- Add real role-based access rules and audit trail persistence
-- Add file uploads and secure storage integration
-- Add real notification delivery and PDF export workflows
+- Replace SQLite with PostgreSQL or Firestore for production-scale workloads
+- Add a secure server-side LLM call and API key management
+- Add file upload, PDF generation, and notification workflows
+- Integrate a managed auth provider such as Clerk, Supabase Auth, or Firebase Auth
+- Add backend validation and authorization checks for all sensitive actions
 
 ## Disclaimer
 

@@ -9,6 +9,7 @@ import {
   MOCK_SCREENING_RESULTS,
   MOCK_AUDIT_LOGS,
 } from '@/data/mockData';
+import { apiFetch } from '@/lib/api';
 
 interface AppDataContextValue {
   users: User[];
@@ -42,6 +43,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => readStorage('raas_audit_logs', MOCK_AUDIT_LOGS));
 
   useEffect(() => {
+    let ignore = false;
+
+    const syncFromApi = async () => {
+      try {
+        const response = await apiFetch<{ users: User[]; applications: Application[]; screeningResults: Record<string, ScreeningResult>; auditLogs: AuditLog[] }>('/api/data');
+        if (!ignore) {
+          setUsers(response.users ?? DEMO_USERS);
+          setApplications(response.applications ?? MOCK_APPLICATIONS);
+          setScreeningResults(response.screeningResults ?? MOCK_SCREENING_RESULTS);
+          setAuditLogs(response.auditLogs ?? MOCK_AUDIT_LOGS);
+        }
+      } catch {
+        // fallback to localStorage-only behavior when backend is not running
+      }
+    };
+
+    syncFromApi();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem('raas_users', JSON.stringify(users));
   }, [users]);
 
@@ -59,18 +83,34 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const addApplication = (app: Application) => {
     setApplications(prev => [app, ...prev]);
+    void apiFetch('/api/applications', {
+      method: 'POST',
+      body: JSON.stringify(app),
+    }).catch(() => undefined);
   };
 
   const updateApplicationStatus = (id: string, status: Application['status']) => {
     setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    void apiFetch(`/api/applications/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }).catch(() => undefined);
   };
 
   const saveScreeningResult = (result: ScreeningResult) => {
     setScreeningResults(prev => ({ ...prev, [result.applicationId]: result }));
+    void apiFetch('/api/screening-results', {
+      method: 'POST',
+      body: JSON.stringify(result),
+    }).catch(() => undefined);
   };
 
   const addAuditLog = (log: AuditLog) => {
     setAuditLogs(prev => [log, ...prev]);
+    void apiFetch('/api/audit-logs', {
+      method: 'POST',
+      body: JSON.stringify(log),
+    }).catch(() => undefined);
   };
 
   const addUser = (user: User) => {

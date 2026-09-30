@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { DEMO_USERS, User } from '@/data/mockData';
+import { apiFetch } from '@/lib/api';
 
 interface AuthContextValue {
   user: User | null;
@@ -27,6 +28,14 @@ const readPersistedUser = (): User | null => {
   }
 };
 
+const persistUser = (user: User | null) => {
+  if (user) {
+    localStorage.setItem('raas_user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('raas_user');
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,9 +46,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<{ error?: string }> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    try {
+      const response = await apiFetch<{ user: User }>('/api/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+
+      setUser(response.user);
+      persistUser(response.user);
+      return {};
+    } catch {
+      // fallback to local demo flow when backend is unavailable
+    }
+
     await new Promise(r => setTimeout(r, 600));
 
-    const normalizedEmail = email.trim().toLowerCase();
     const expectedPw = DEMO_PASSWORDS[normalizedEmail];
     const savedUser = readPersistedUser();
     const found = DEMO_USERS.find(u => u.email.toLowerCase() === normalizedEmail)
@@ -47,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (found && expectedPw === password) {
       setUser(found);
-      localStorage.setItem('raas_user', JSON.stringify(found));
+      persistUser(found);
       return {};
     }
 
@@ -56,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const match = candidate.find(u => u.email.toLowerCase() === normalizedEmail);
       if (match && password === (localStorage.getItem(`raas_password_${match.id}`) ?? '')) {
         setUser(match);
-        localStorage.setItem('raas_user', JSON.stringify(match));
+        persistUser(match);
         return {};
       }
     }
@@ -69,6 +92,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const normalizedEmail = email.trim().toLowerCase();
     if (!trimmedName || !normalizedEmail || !password.trim()) {
       return { error: 'Please provide a valid name, email and password.' };
+    }
+
+    try {
+      const response = await apiFetch<{ user: User }>('/api/register', {
+        method: 'POST',
+        body: JSON.stringify({ name: trimmedName, email: normalizedEmail, password }),
+      });
+
+      setUser(response.user);
+      persistUser(response.user);
+      return { user: response.user };
+    } catch {
+      // fallback to local-only registration
     }
 
     const existing = JSON.parse(localStorage.getItem('raas_registered_users') ?? '[]') as User[];
@@ -87,13 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('raas_registered_users', JSON.stringify(nextUsers));
     localStorage.setItem(`raas_password_${generatedUser.id}`, password);
     setUser(generatedUser);
-    localStorage.setItem('raas_user', JSON.stringify(generatedUser));
+    persistUser(generatedUser);
     return { user: generatedUser };
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('raas_user');
+    persistUser(null);
   };
 
   return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
