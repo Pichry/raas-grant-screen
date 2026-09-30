@@ -20,3 +20,8 @@ logs/
 /.plugins/
 /.opencode-skills/
 .vercel
+
+# Local database artifacts
+data/*.db
+data/*.db-shm
+data/*.db-wal
