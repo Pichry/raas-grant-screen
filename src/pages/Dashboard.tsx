@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { FileText, CheckCircle, AlertTriangle, XCircle, Copy, AlignLeft, TrendingUp } from 'lucide-react';
 import { useAppData } from '@/context/AppDataContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useNavigate } from 'react-router-dom';
@@ -36,16 +37,21 @@ const STATUS_COLORS: Record<string, string> = {
 const PIE_COLORS = ['#16a34a', '#d97706', '#3b82f6', '#94a3b8', '#dc2626', '#7c3aed'];
 
 export function Dashboard() {
+  const { user } = useAuth();
   const { applications, screeningResults } = useAppData();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  const visibleApplications = user?.role === 'APPLICANT'
+    ? applications.filter(app => app.email.toLowerCase() === user.email.toLowerCase())
+    : applications;
+
   const stats = useMemo(() => {
-    const total = applications.length;
-    const eligible = applications.filter(a => a.status === 'CLEARED').length;
-    const needsReview = applications.filter(a => a.status === 'NEEDS_REVIEW' || a.status === 'FLAGGED').length;
-    const incomplete = applications.filter(a => a.status === 'INCOMPLETE').length;
-    const potentialDuplicates = applications.filter(a => (a.similarityScore ?? 0) >= 70).length;
+    const total = visibleApplications.length;
+    const eligible = visibleApplications.filter(a => a.status === 'CLEARED').length;
+    const needsReview = visibleApplications.filter(a => a.status === 'NEEDS_REVIEW' || a.status === 'FLAGGED').length;
+    const incomplete = visibleApplications.filter(a => a.status === 'INCOMPLETE').length;
+    const potentialDuplicates = visibleApplications.filter(a => (a.similarityScore ?? 0) >= 70).length;
     const textualOverlap = Object.values(screeningResults).filter(r => r.textualOverlapStatus === 'POTENTIAL_OVERLAP').length;
     return { total, eligible, needsReview, incomplete, potentialDuplicates, textualOverlap };
   }, [applications, screeningResults]);
@@ -53,7 +59,7 @@ export function Dashboard() {
   // Status distribution for bar/pie
   const statusData = useMemo(() => {
     const counts: Record<string, number> = {};
-    applications.forEach(a => { counts[a.status] = (counts[a.status] ?? 0) + 1; });
+    visibleApplications.forEach(a => { counts[a.status] = (counts[a.status] ?? 0) + 1; });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [applications]);
 
@@ -78,7 +84,7 @@ export function Dashboard() {
       'Incomplete': 0,
       'Eligibility Issue': 0,
     };
-    applications.forEach(a => {
+    visibleApplications.forEach(a => {
       if ((a.similarityScore ?? 0) >= 70) flagCounts['High Similarity']++;
       if (a.status === 'INCOMPLETE') flagCounts['Incomplete']++;
     });
@@ -89,7 +95,7 @@ export function Dashboard() {
     return Object.entries(flagCounts).map(([name, value]) => ({ name, value }));
   }, [applications, screeningResults]);
 
-  const recentApps = applications.slice(0, 5);
+  const recentApps = visibleApplications.slice(0, 5);
 
   return (
     <div className="p-6 space-y-6">

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, SlidersHorizontal, ChevronUp, ChevronDown } from 'lucide-react';
 import { useAppData } from '@/context/AppDataContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { GRANT_CALLS, Application } from '@/data/mockData';
@@ -22,10 +23,15 @@ function SimilarityBar({ score }: { score: number }) {
 }
 
 export function Applications() {
+  const { user } = useAuth();
   const { applications } = useAppData();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+
+  const visibleApplications = user?.role === 'APPLICANT'
+    ? applications.filter(app => app.email.toLowerCase() === user.email.toLowerCase())
+    : applications;
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [grantFilter, setGrantFilter] = useState('ALL');
   const [sortKey, setSortKey] = useState<SortKey>('submissionDate');
@@ -34,7 +40,7 @@ export function Applications() {
   const statuses = ['ALL', 'PENDING', 'SCREENING', 'CLEARED', 'NEEDS_REVIEW', 'INCOMPLETE', 'FLAGGED'];
 
   const filtered = useMemo(() => {
-    let list = [...applications];
+    let list = [...visibleApplications];
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(a =>
@@ -72,8 +78,8 @@ export function Applications() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>{t('applications')}</h1>
-        <p className="text-slate-500 text-sm mt-1">{filtered.length} of {applications.length} applications</p>
+        <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>{user?.role === 'APPLICANT' ? 'My Applications' : t('applications')}</h1>
+        <p className="text-slate-500 text-sm mt-1">{filtered.length} of {visibleApplications.length} applications</p>
       </div>
 
       {/* Filters bar */}

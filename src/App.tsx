@@ -15,6 +15,11 @@ import { ScreeningResult } from '@/pages/ScreeningResult';
 import { ProposalComparison } from '@/pages/ProposalComparison';
 import { Reports } from '@/pages/Reports';
 import { Settings } from '@/pages/Settings';
+import { GrantCalls } from '@/pages/GrantCalls';
+import { UsersRoles } from '@/pages/UsersRoles';
+import { AISettings } from '@/pages/AISettings';
+import { ScreeningQueue } from '@/pages/ScreeningQueue';
+import { MyActivity } from '@/pages/MyActivity';
 
 function RequireRole({ allow }: { allow: Array<'ADMIN' | 'GRANT_OFFICER' | 'APPLICANT'> }) {
   const { user, loading } = useAuth();
@@ -60,22 +65,36 @@ function ProtectedApp() {
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
 
-        <Route element={<RequireRole allow={['ADMIN', 'GRANT_OFFICER']} />}>
+<Route element={<RequireRole allow={['ADMIN']} />}>
+          <Route path="/grant-calls" element={<GrantCalls />} />
+          <Route path="/users" element={<UsersRoles />} />
+          <Route path="/ai-settings" element={<AISettings />} />
+        </Route>
+
+        <Route element={<RequireRole allow={['ADMIN', 'GRANT_OFFICER', 'APPLICANT']} />}>
           <Route path="/applications" element={<Applications />} />
+        </Route>
+
+        <Route element={<RequireRole allow={['ADMIN', 'GRANT_OFFICER']} />}>
           <Route path="/historical" element={<HistoricalProposals />} />
           <Route path="/comparison/:appId/:histId" element={<ProposalComparison />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/screening" element={<Applications />} />
+          <Route path="/screening-queue" element={<ScreeningQueue />} />
+          <Route path="/my-activity" element={<MyActivity />} />
         </Route>
 
         <Route element={<RequireRole allow={['APPLICANT']} />}>
           <Route path="/submit" element={<SubmitApplication />} />
         </Route>
 
+        <Route element={<RequireRole allow={['ADMIN', 'GRANT_OFFICER']} />}>
+          <Route path="/screening/:id" element={<ScreeningResult />} />
+        </Route>
+
         <Route element={<RequireRole allow={['ADMIN', 'GRANT_OFFICER', 'APPLICANT']} />}>
           <Route path="/applications/:id" element={<ApplicationDetail />} />
-          <Route path="/screening/:id" element={<ScreeningResult />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

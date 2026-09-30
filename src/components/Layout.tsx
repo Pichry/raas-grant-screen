@@ -8,13 +8,34 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 
-const BASE_NAV_ITEMS = [
-  { key: 'dashboard', path: '/', icon: LayoutDashboard },
-  { key: 'applications', path: '/applications', icon: FileText },
-  { key: 'historical_proposals', path: '/historical', icon: Archive },
-  { key: 'screening', path: '/screening', icon: ClipboardCheck },
-  { key: 'reports', path: '/reports', icon: BarChart2 },
-  { key: 'settings', path: '/settings', icon: Settings },
+const ADMIN_NAV_ITEMS = [
+  { key: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { key: 'grant_calls', path: '/grant-calls', icon: FileText, label: 'Grant Calls' },
+  { key: 'applications', path: '/applications', icon: FileText, label: 'Applications' },
+  { key: 'screening', path: '/screening', icon: ClipboardCheck, label: 'Screening' },
+  { key: 'historical_proposals', path: '/historical', icon: Archive, label: 'Historical Proposals' },
+  { key: 'users_roles', path: '/users', icon: Shield, label: 'Users & Roles' },
+  { key: 'reports', path: '/reports', icon: BarChart2, label: 'Reports' },
+  { key: 'ai_settings', path: '/ai-settings', icon: Shield, label: 'AI Settings' },
+  { key: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
+];
+
+const OFFICER_NAV_ITEMS = [
+  { key: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { key: 'screening_queue', path: '/screening-queue', icon: ClipboardCheck, label: 'Screening Queue' },
+  { key: 'applications', path: '/applications', icon: FileText, label: 'Applications' },
+  { key: 'historical_proposals', path: '/historical', icon: Archive, label: 'Historical Proposals' },
+  { key: 'reports', path: '/reports', icon: BarChart2, label: 'Reports' },
+  { key: 'my_activity', path: '/my-activity', icon: BarChart2, label: 'My Activity' },
+  { key: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
+];
+
+const APPLICANT_NAV_ITEMS = [
+  { key: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { key: 'my_applications', path: '/applications', icon: FileText, label: 'My Applications' },
+  { key: 'submit_application', path: '/submit', icon: PlusCircle, label: 'New Application' },
+  { key: 'notifications', path: '/settings', icon: Bell, label: 'Notifications' },
+  { key: 'settings', path: '/settings', icon: Settings, label: 'Profile' },
 ];
 
 export function Layout() {
@@ -24,20 +45,10 @@ export function Layout() {
 
   const navItems =
     user?.role === 'APPLICANT'
-      ? [
-          { key: 'dashboard', path: '/', icon: LayoutDashboard },
-          { key: 'submit_application', path: '/submit', icon: PlusCircle },
-        ]
+      ? APPLICANT_NAV_ITEMS
       : user?.role === 'ADMIN'
-        ? BASE_NAV_ITEMS
-        : [
-            { key: 'dashboard', path: '/', icon: LayoutDashboard },
-            { key: 'applications', path: '/applications', icon: FileText },
-            { key: 'submit_application', path: '/submit', icon: PlusCircle },
-            { key: 'historical_proposals', path: '/historical', icon: Archive },
-            { key: 'screening', path: '/screening', icon: ClipboardCheck },
-            { key: 'reports', path: '/reports', icon: BarChart2 },
-          ];
+        ? ADMIN_NAV_ITEMS
+        : OFFICER_NAV_ITEMS;
 
   const roleLabel =
     user?.role === 'ADMIN'
@@ -76,7 +87,7 @@ export function Layout() {
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto no-scrollbar">
           <div className="space-y-0.5">
-            {navItems.map(({ key, path, icon: Icon }) => (
+            {navItems.map(({ key, path, icon: Icon, label }) => (
               <NavLink
                 key={key}
                 to={path}
@@ -91,7 +102,7 @@ export function Layout() {
                 }
               >
                 <Icon size={17} />
-                <span style={{ fontFamily: 'var(--font-display)' }}>{t(key)}</span>
+                <span style={{ fontFamily: 'var(--font-display)' }}>{label}</span>
               </NavLink>
             ))}
           </div>

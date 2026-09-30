@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, User, Building, Mail, Calendar, Tag, ClipboardList, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useAppData } from '@/context/AppDataContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { StatusBadge } from '@/components/StatusBadge';
 
@@ -16,11 +17,13 @@ function Field({ label, value, mono = false }: { label: string; value: string; m
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { applications, screeningResults } = useAppData();
   const { t } = useLanguage();
 
   const app = applications.find(a => a.id === id);
   const result = id ? screeningResults[id] : null;
+  const canViewScreening = user?.role !== 'APPLICANT';
 
   if (!app) {
     return (
@@ -31,12 +34,21 @@ export function ApplicationDetail() {
     );
   }
 
+  if (user?.role === 'APPLICANT' && app.email.toLowerCase() !== user.email.toLowerCase()) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-slate-500">You do not have access to this application.</p>
+        <button onClick={() => navigate('/applications')} className="mt-4 text-blue-600 text-sm hover:underline">← Back to my applications</button>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-5xl">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
-        <button onClick={() => navigate('/applications')} className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
-          <ArrowLeft size={14} /> Applications
+        <button onClick={() => navigate(user?.role === 'APPLICANT' ? '/submit' : '/applications')} className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
+          <ArrowLeft size={14} /> {user?.role === 'APPLICANT' ? 'Submit Application' : 'Applications'}
         </button>
         <ChevronRight size={14} className="text-slate-400" />
         <span className="text-slate-500 font-mono">{app.id}</span>
@@ -51,15 +63,17 @@ export function ApplicationDetail() {
           </div>
           <h1 className="text-xl font-bold text-slate-900 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>{app.title}</h1>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={() => navigate(`/screening/${app.id}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
-          >
-            <ClipboardList size={15} />
-            {result ? 'View Screening' : t('run_screening')}
-          </button>
-        </div>
+        {canViewScreening && (
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => navigate(`/screening/${app.id}`)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
+            >
+              <ClipboardList size={15} />
+              {result ? 'View Screening' : t('run_screening')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main grid */}
@@ -138,7 +152,7 @@ export function ApplicationDetail() {
             </div>
           </div>
 
-          {result && (
+          {canViewScreening && result && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-sm font-semibold text-slate-700 mb-3">Screening Summary</h2>
               <div className="space-y-2">
