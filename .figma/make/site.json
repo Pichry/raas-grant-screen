@@ -1,0 +1,11 @@
+{
+  "title": "RAAS GrantScreen AI — NRIF Proposal Screening",
+  "description": "AI-assisted grant proposal screening platform for Rwanda's National Innovation Fund. Demo prototype for RAAS practical assessment.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

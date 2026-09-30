@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-navy-50: #e8edf5;
+  --color-navy-100: #c5d0e4;
+  --color-navy-200: #9fb0cf;
+  --color-navy-300: #7090ba;
+  --color-navy-400: #4e75ab;
+  --color-navy-500: #2c5a9c;
+  --color-navy-600: #1e4080;
+  --color-navy-700: #153064;
+  --color-navy-800: #0f2248;
+  --color-navy-900: #0a1530;
+  --color-navy-950: #06111f;
+
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+
+  --color-surface: #f0f4f8;
+  --color-card: #ffffff;
+  --color-sidebar: #0f2248;
+  --color-sidebar-hover: #1e3a6a;
+  --color-sidebar-active: #2563eb;
+  --color-sidebar-text: #94b4d6;
+  --color-sidebar-text-active: #ffffff;
+
+  --color-status-pass: #16a34a;
+  --color-status-pass-bg: #dcfce7;
+  --color-status-fail: #dc2626;
+  --color-status-fail-bg: #fee2e2;
+  --color-status-review: #d97706;
+  --color-status-review-bg: #fef3c7;
+  --color-status-info: #2563eb;
+  --color-status-info-bg: #dbeafe;
+  --color-status-overlap: #7c3aed;
+  --color-status-overlap-bg: #ede9fe;
+}
+
+:root {
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #f0f4f8;
+  color: #0f172a;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Custom scrollbar hide utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
