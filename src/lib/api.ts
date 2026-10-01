@@ -1,5 +1,26 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+const getDefaultApiBase = () => {
+  const configured = import.meta.env.VITE_API_BASE?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
+  if (import.meta.env.DEV) {
+    return 'http://localhost:4000';
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  return 'http://localhost:4000';
+};
+
+const API_BASE = getDefaultApiBase();
 const AUTH_STORAGE_KEY = 'raas_auth';
+
+if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE) {
+  console.warn('VITE_API_BASE is not set. The app will call the same origin in production. Set this variable to your backend URL for login and API requests to work correctly.');
+}
 
 const getStoredAuth = () => {
   try {
