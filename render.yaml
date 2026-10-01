@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: raas-grant-screen-api
+    env: node
+    region: oregon
+    plan: free
+    nodeVersion: 22
+    buildCommand: npm install
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AI_PROVIDER
+        value: local-demo
+      - key: OPENAI_API_KEY
+        value: ""
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
