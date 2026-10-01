@@ -18,6 +18,7 @@ interface AppDataContextValue {
   auditLogs: AuditLog[];
   addApplication: (app: Application) => void;
   updateApplicationStatus: (id: string, status: Application['status']) => void;
+  publishEligibilityDecision: (id: string, result: Application['eligibilityResult'], message?: string) => void;
   saveScreeningResult: (result: ScreeningResult) => void;
   addAuditLog: (log: AuditLog) => void;
   addUser: (user: User) => void;
@@ -28,10 +29,15 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 const readStorage = <T,>(key: string, fallback: T): T => {
   const raw = localStorage.getItem(key);
-  if (!raw) return fallback;
+  if (!raw) {
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+
   try {
     return JSON.parse(raw) as T;
   } catch {
+    localStorage.setItem(key, JSON.stringify(fallback));
     return fallback;
   }
 };
@@ -97,6 +103,32 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }).catch(() => undefined);
   };
 
+  const publishEligibilityDecision = (id: string, result: Application['eligibilityResult'], message?: string) => {
+    const nextStatus: Application['status'] = result === 'PASS'
+      ? 'CLEARED'
+      : result === 'FAIL'
+      ? 'FLAGGED'
+      : result === 'REVIEW'
+      ? 'NEEDS_REVIEW'
+      : 'PENDING';
+
+    setApplications(prev => prev.map(app => app.id === id ? {
+      ...app,
+      status: nextStatus,
+      eligibilityResult: result,
+      eligibilityMessage: message ?? app.eligibilityMessage ?? 'Eligibility decision published.',
+      eligibilityPublishedAt: new Date().toISOString(),
+    } : app));
+
+    void apiFetch(`/api/applications/${id}/eligibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        eligibilityResult: result,
+        eligibilityMessage: message ?? 'Eligibility decision published.',
+      }),
+    }).catch(() => undefined);
+  };
+
   const saveScreeningResult = (result: ScreeningResult) => {
     setScreeningResults(prev => ({ ...prev, [result.applicationId]: result }));
     void apiFetch('/api/screening-results', {
@@ -125,7 +157,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const getUserByEmail = (email: string) => users.find(user => user.email.toLowerCase() === email.toLowerCase());
 
   return (
-    <AppDataContext.Provider value={{ users, applications, screeningResults, auditLogs, addApplication, updateApplicationStatus, saveScreeningResult, addAuditLog, addUser, getUserByEmail }}>
+    <AppDataContext.Provider value={{ users, applications, screeningResults, auditLogs, addApplication, updateApplicationStatus, publishEligibilityDecision, saveScreeningResult, addAuditLog, addUser, getUserByEmail }}>
       {children}
     </AppDataContext.Provider>
   );

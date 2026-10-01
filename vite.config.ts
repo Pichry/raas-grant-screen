@@ -1,15 +1,14 @@
-import { defineConfig, type HtmlTagDescriptor, type Plugin } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import path from 'node:path'
+import { defineConfig, type HtmlTagDescriptor, type Plugin } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
 
-import siteConfiguration from './.figma/make/site.json'
+import siteConfiguration from './.figma/make/site.json' with { type: 'json' };
 
+const projectRoot = fileURLToPath(new URL('.', import.meta.url));
 
-// Vite config — https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // .figma/make/deploy-preview passes `--mode development` for cached-preview builds.
-  const emitSourcemaps = mode === 'development'
+  const emitSourcemaps = mode === 'development';
 
   return {
     base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
@@ -18,7 +17,7 @@ export default defineConfig(({ mode }) => {
       minify: !emitSourcemaps,
     },
     plugins: [
-react(),
+      react(),
       tailwindcss(),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
@@ -27,13 +26,13 @@ react(),
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
     server: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8443'),
-      strictPort: true,
+      port: Number.parseInt(process.env.PORT || '8444', 10),
+      strictPort: false,
       proxy: {
         '/api': {
           target: 'http://localhost:4000',
@@ -41,17 +40,15 @@ react(),
         },
       },
       watch: {
-        ignored: [
-          '**/.figma/**',
-],
+        ignored: ['**/.figma/**'],
       },
     },
     preview: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
-      port: parseInt(process.env.PORT || '8443'),
+      port: Number.parseInt(process.env.PORT || '8444', 10),
     },
-  }
-})
+  };
+});
 
 type FigmaSiteConfiguration = {
   title?: string

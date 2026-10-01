@@ -29,6 +29,9 @@ export interface Application {
   status: AppStatus;
   createdAt: string;
   similarityScore?: number;
+  eligibilityResult?: 'PASS' | 'FAIL' | 'REVIEW' | 'PENDING';
+  eligibilityMessage?: string;
+  eligibilityPublishedAt?: string;
 }
 
 export interface EligibilityCheck {
@@ -133,6 +136,9 @@ export const MOCK_APPLICATIONS: Application[] = [
     status: 'CLEARED',
     createdAt: '2025-03-15T09:30:00Z',
     similarityScore: 12,
+    eligibilityResult: 'PASS',
+    eligibilityMessage: 'Your application is eligible for funding consideration and has been approved for the next review stage.',
+    eligibilityPublishedAt: '2025-03-18T14:00:00Z',
   },
   {
     id: 'APP-2025-002',
@@ -149,6 +155,9 @@ export const MOCK_APPLICATIONS: Application[] = [
     status: 'NEEDS_REVIEW',
     createdAt: '2025-03-20T14:15:00Z',
     similarityScore: 67,
+    eligibilityResult: 'REVIEW',
+    eligibilityMessage: 'Your application requires additional review before an eligibility determination can be finalized.',
+    eligibilityPublishedAt: '2025-03-23T09:00:00Z',
   },
   {
     id: 'APP-2025-003',
@@ -213,6 +222,9 @@ export const MOCK_APPLICATIONS: Application[] = [
     status: 'FLAGGED',
     createdAt: '2025-04-01T13:00:00Z',
     similarityScore: 84,
+    eligibilityResult: 'FAIL',
+    eligibilityMessage: 'This application is not eligible under the current call because it does not meet the required eligibility criteria and needs revision before resubmission.',
+    eligibilityPublishedAt: '2025-04-02T16:10:00Z',
   },
   {
     id: 'APP-2025-007',

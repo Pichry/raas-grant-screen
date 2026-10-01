@@ -100,11 +100,15 @@ The API runs locally on http://localhost:4000.
 
 ## Environment variables
 
-Create a .env file with values such as:
+Copy .env.example to .env and update the values for your environment:
 
 ```bash
+PORT=4000
+JWT_SECRET=replace-with-a-long-random-secret
+VITE_API_BASE=
 VITE_AI_PROVIDER=local-demo
-VITE_API_BASE=/api
+VITE_APP_NAME=RAAS GrantScreen AI
+VITE_DEMO_MODE=true
 ```
 
 In a live deployment, the provider would be replaced with real backend settings such as Firebase config and LLM API keys stored server-side.

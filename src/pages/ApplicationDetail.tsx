@@ -152,6 +152,17 @@ export function ApplicationDetail() {
             </div>
           </div>
 
+          {app.eligibilityResult && app.eligibilityPublishedAt && (user?.role === 'APPLICANT' || user?.role !== 'APPLICANT') && (
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 mb-3">Eligibility Decision</h2>
+              <div className="space-y-3">
+                <StatusBadge status={app.eligibilityResult} size="md" />
+                <div className="text-sm text-slate-700 leading-relaxed">{app.eligibilityMessage || 'An eligibility decision has been published for this application.'}</div>
+                <div className="text-[11px] text-slate-500">Published: {new Date(app.eligibilityPublishedAt).toLocaleString('en-RW')}</div>
+              </div>
+            </div>
+          )}
+
           {canViewScreening && result && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-sm font-semibold text-slate-700 mb-3">Screening Summary</h2>

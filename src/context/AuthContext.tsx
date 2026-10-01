@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api';
 
 interface AuthContextValue {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ error?: string; user?: User }>;
@@ -12,36 +13,33 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const DEMO_PASSWORDS: Record<string, string> = {
-  'admin@raas.rw': 'Admin2025!',
-  'officer@raas.rw': 'Officer2025!',
-  'applicant@raas.rw': 'Applicant2025!',
-};
-
-const readPersistedUser = (): User | null => {
-  const stored = localStorage.getItem('raas_user');
-  if (!stored) return null;
+const readPersistedAuth = (): { user: User | null; token: string | null } => {
+  const stored = localStorage.getItem('raas_auth');
+  if (!stored) return { user: null, token: null };
   try {
-    return JSON.parse(stored) as User;
+    return JSON.parse(stored) as { user: User | null; token: string | null };
   } catch {
-    return null;
+    return { user: null, token: null };
   }
 };
 
-const persistUser = (user: User | null) => {
-  if (user) {
-    localStorage.setItem('raas_user', JSON.stringify(user));
+const persistAuth = (user: User | null, token: string | null) => {
+  if (user && token) {
+    localStorage.setItem('raas_auth', JSON.stringify({ user, token }));
   } else {
-    localStorage.removeItem('raas_user');
+    localStorage.removeItem('raas_auth');
   }
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUser(readPersistedUser());
+    const persisted = readPersistedAuth();
+    setUser(persisted.user);
+    setToken(persisted.token);
     setLoading(false);
   }, []);
 
@@ -49,42 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const response = await apiFetch<{ user: User }>('/api/login', {
+      const response = await apiFetch<{ user: User; token: string }>('/api/login', {
         method: 'POST',
         body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
       setUser(response.user);
-      persistUser(response.user);
+      setToken(response.token);
+      persistAuth(response.user, response.token);
       return {};
-    } catch {
-      // fallback to local demo flow when backend is unavailable
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Invalid email or password.' };
     }
-
-    await new Promise(r => setTimeout(r, 600));
-
-    const expectedPw = DEMO_PASSWORDS[normalizedEmail];
-    const savedUser = readPersistedUser();
-    const found = DEMO_USERS.find(u => u.email.toLowerCase() === normalizedEmail)
-      ?? (savedUser && savedUser.email.toLowerCase() === normalizedEmail ? savedUser : null);
-
-    if (found && expectedPw === password) {
-      setUser(found);
-      persistUser(found);
-      return {};
-    }
-
-    if (savedUser && savedUser.email.toLowerCase() === normalizedEmail) {
-      const candidate = JSON.parse(localStorage.getItem('raas_registered_users') ?? '[]') as User[];
-      const match = candidate.find(u => u.email.toLowerCase() === normalizedEmail);
-      if (match && password === (localStorage.getItem(`raas_password_${match.id}`) ?? '')) {
-        setUser(match);
-        persistUser(match);
-        return {};
-      }
-    }
-
-    return { error: 'Invalid email or password. Use the demo credentials or a registered applicant account.' };
   };
 
   const register = async (name: string, email: string, password: string): Promise<{ error?: string; user?: User }> => {
@@ -95,44 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await apiFetch<{ user: User }>('/api/register', {
+      const response = await apiFetch<{ user: User; token: string }>('/api/register', {
         method: 'POST',
         body: JSON.stringify({ name: trimmedName, email: normalizedEmail, password }),
       });
 
       setUser(response.user);
-      persistUser(response.user);
+      setToken(response.token);
+      persistAuth(response.user, response.token);
       return { user: response.user };
-    } catch {
-      // fallback to local-only registration
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Unable to register account.' };
     }
-
-    const existing = JSON.parse(localStorage.getItem('raas_registered_users') ?? '[]') as User[];
-    if (existing.some(user => user.email.toLowerCase() === normalizedEmail)) {
-      return { error: 'An account with that email already exists.' };
-    }
-
-    const generatedUser: User = {
-      id: `app-${Date.now()}`,
-      name: trimmedName,
-      email: normalizedEmail,
-      role: 'APPLICANT',
-    };
-
-    const nextUsers = [generatedUser, ...existing];
-    localStorage.setItem('raas_registered_users', JSON.stringify(nextUsers));
-    localStorage.setItem(`raas_password_${generatedUser.id}`, password);
-    setUser(generatedUser);
-    persistUser(generatedUser);
-    return { user: generatedUser };
   };
 
   const logout = () => {
     setUser(null);
-    persistUser(null);
+    setToken(null);
+    persistAuth(null, null);
   };
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

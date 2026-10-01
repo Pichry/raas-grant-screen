@@ -15,6 +15,7 @@ import { ScreeningResult } from '@/pages/ScreeningResult';
 import { ProposalComparison } from '@/pages/ProposalComparison';
 import { Reports } from '@/pages/Reports';
 import { Settings } from '@/pages/Settings';
+import { Notifications } from '@/pages/Notifications';
 import { GrantCalls } from '@/pages/GrantCalls';
 import { UsersRoles } from '@/pages/UsersRoles';
 import { AISettings } from '@/pages/AISettings';
@@ -80,13 +81,15 @@ function ProtectedApp() {
           <Route path="/comparison/:appId/:histId" element={<ProposalComparison />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/screening" element={<Applications />} />
+          <Route path="/screening" element={<ScreeningQueue />} />
           <Route path="/screening-queue" element={<ScreeningQueue />} />
           <Route path="/my-activity" element={<MyActivity />} />
         </Route>
 
         <Route element={<RequireRole allow={['APPLICANT']} />}>
           <Route path="/submit" element={<SubmitApplication />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
 
         <Route element={<RequireRole allow={['ADMIN', 'GRANT_OFFICER']} />}>

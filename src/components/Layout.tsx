@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, PlusCircle, Archive,
   ClipboardCheck, BarChart2, Settings, LogOut,
@@ -34,7 +34,7 @@ const APPLICANT_NAV_ITEMS = [
   { key: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { key: 'my_applications', path: '/applications', icon: FileText, label: 'My Applications' },
   { key: 'submit_application', path: '/submit', icon: PlusCircle, label: 'New Application' },
-  { key: 'notifications', path: '/settings', icon: Bell, label: 'Notifications' },
+  { key: 'notifications', path: '/notifications', icon: Bell, label: 'Notifications' },
   { key: 'settings', path: '/settings', icon: Settings, label: 'Profile' },
 ];
 
@@ -42,6 +42,7 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
+  const navigate = useNavigate();
 
   const navItems =
     user?.role === 'APPLICANT'
@@ -151,7 +152,11 @@ export function Layout() {
             </button>
           </div>
 
-          <button className="relative text-slate-500 hover:text-slate-700">
+          <button
+            className="relative text-slate-500 hover:text-slate-700"
+            onClick={() => navigate(user?.role === 'APPLICANT' ? '/notifications' : '/settings')}
+            aria-label="Open notifications"
+          >
             <Bell size={18} />
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">3</span>
           </button>

@@ -12,7 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Modal } from '@/components/Modal';
 import { MOCK_HISTORICAL_PROPOSALS, ScreeningResult as SR, EligibilityCheck } from '@/data/mockData';
-import { generateScreeningAnalysis, getAiProviderStatus } from '@/services/aiService';
+import { analyzeApplication, getAiProviderStatus } from '@/services/aiService';
 
 function CheckRow({ check }: { check: EligibilityCheck }) {
   const icon = check.result === 'PASS'
@@ -37,7 +37,7 @@ const aiStatus = getAiProviderStatus();
 export function ScreeningResult() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { applications, screeningResults, saveScreeningResult, updateApplicationStatus, addAuditLog } = useAppData();
+  const { applications, screeningResults, saveScreeningResult, updateApplicationStatus, publishEligibilityDecision, addAuditLog } = useAppData();
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -61,7 +61,7 @@ export function ScreeningResult() {
   const runScreening = async () => {
     setRunning(true);
     await new Promise(r => setTimeout(r, 2500));
-    const res = generateScreeningAnalysis(app, MOCK_HISTORICAL_PROPOSALS);
+    const res = await analyzeApplication(app, MOCK_HISTORICAL_PROPOSALS);
     saveScreeningResult(res);
     const newStatus = res.finalStatus === 'CLEARED_FOR_REVIEW' ? 'CLEARED'
       : res.finalStatus === 'NEEDS_HUMAN_REVIEW' ? 'NEEDS_REVIEW'
@@ -94,6 +94,30 @@ export function ScreeningResult() {
     toast('success', `Application ${app.id} ${action === 'CLEAR' ? 'cleared' : action === 'FLAG' ? 'flagged for review' : 'marked incomplete'}.`);
     setConfirmModal(null);
     setNotes('');
+  };
+
+  const publishEligibility = (decision: 'PASS' | 'FAIL' | 'REVIEW' | 'PENDING', customMessage?: string) => {
+    const messageMap: Record<typeof decision, string> = {
+      PASS: 'Your application has been reviewed and is eligible for funding consideration under the current grant call.',
+      FAIL: 'Your application is not eligible under the current grant call and will need to be revised before resubmission.',
+      REVIEW: 'Your application requires additional review before an eligibility decision can be finalized.',
+      PENDING: 'Your application eligibility is still pending while more review is completed.',
+    };
+
+    const decisionMessage = customMessage ?? messageMap[decision];
+    publishEligibilityDecision(app.id, decision, decisionMessage);
+    addAuditLog({
+      id: `log-${Date.now()}`,
+      userId: user?.id ?? '',
+      userName: user?.name ?? '',
+      applicationId: app.id,
+      action: `PUBLISH_ELIGIBILITY_${decision}`,
+      previousStatus: app.status,
+      newStatus: app.status,
+      timestamp: new Date().toISOString(),
+      notes: decisionMessage,
+    });
+    toast('success', `Eligibility decision published to ${app.applicantName}.`);
   };
 
   return (
@@ -150,6 +174,46 @@ export function ScreeningResult() {
 
       {result && !running && (
         <div className="space-y-5">
+          {user?.role !== 'APPLICANT' && (
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 className="text-sm font-semibold text-slate-800 mb-3" style={{ fontFamily: 'var(--font-display)' }}>Publish Eligibility Decision to Applicant</h2>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {(['PASS', 'REVIEW', 'FAIL', 'PENDING'] as const).map(decision => (
+                  <button
+                    key={decision}
+                    onClick={() => publishEligibility(decision)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      decision === 'PASS'
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : decision === 'FAIL'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : decision === 'REVIEW'
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                        : 'bg-slate-600 hover:bg-slate-700 text-white'
+                    }`}
+                  >
+                    {decision}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Optional message to share with the applicant about the eligibility verdict…"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={() => publishEligibility(app.eligibilityResult ?? 'PENDING', notes || undefined)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+                >
+                  Publish to applicant
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* AI disclaimer */}
           <div className="flex items-start gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
             <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />

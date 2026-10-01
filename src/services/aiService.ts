@@ -1,4 +1,5 @@
 import { Application, HistoricalProposal, ScreeningResult } from '@/data/mockData';
+import { apiFetch } from '@/lib/api';
 
 export type ScreeningAnalysisResult = Omit<ScreeningResult, 'screenedAt' | 'screenedBy'> & {
   screenedAt: string;
@@ -133,4 +134,28 @@ export function generateScreeningAnalysis(
     screenedAt: new Date().toISOString(),
     screenedBy: 'AI Advisory Layer',
   };
+}
+
+export async function analyzeApplication(
+  app: Application,
+  historicalProposals: HistoricalProposal[],
+): Promise<ScreeningAnalysisResult> {
+  const provider = import.meta.env.VITE_AI_PROVIDER ?? 'local-demo';
+  if (provider === 'local-demo') {
+    return generateScreeningAnalysis(app, historicalProposals);
+  }
+
+  try {
+    const result = await apiFetch<ScreeningAnalysisResult>('/api/ai/screening', {
+      method: 'POST',
+      body: JSON.stringify({ app, historicalProposals }),
+    });
+    if (result && result.applicationId) {
+      return result;
+    }
+  } catch (error) {
+    console.warn('AI provider call failed, falling back to local simulation:', error);
+  }
+
+  return generateScreeningAnalysis(app, historicalProposals);
 }
